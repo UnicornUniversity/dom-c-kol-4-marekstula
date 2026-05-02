@@ -46,16 +46,16 @@ export function getEmployeeStatistics(employees) {
 
   for (let i = 0; i < employees.length; i++) {
     const w = employees[i].workload;
-
     if (w === 10) workload10++;
     else if (w === 20) workload20++;
     else if (w === 30) workload30++;
     else if (w === 40) workload40++;
   }
 
-  // 
-  const agesExact = [];
+  /* ===== PŘESNÝ PRŮMĚRNÝ VĚK ===== */
+
   const yearMs = 365.25 * 24 * 60 * 60 * 1000;
+  const agesExact = [];
 
   for (let i = 0; i < employees.length; i++) {
     const birthMs = new Date(employees[i].birthdate).getTime();
@@ -70,7 +70,8 @@ export function getEmployeeStatistics(employees) {
 
   const averageAge = Number((sumAges / total).toFixed(1));
 
-  // celé roky – zvlášť (jak chce zadání)
+  /* ===== CELÉ VĚKY ===== */
+
   const agesWhole = [];
   for (let i = 0; i < employees.length; i++) {
     agesWhole.push(getAge(employees[i].birthdate));
@@ -78,14 +79,20 @@ export function getEmployeeStatistics(employees) {
 
   const minAge = Math.min.apply(null, agesWhole);
   const maxAge = Math.max.apply(null, agesWhole);
-  const medianAge = getMedian(agesWhole);
 
-  const workloadsArr = [];
+  // 
+  const medianAge = Math.trunc(getMedian(agesWhole));
+
+  /* ===== MEDIÁN WORKLOAD ===== */
+
+  const workloadArr = [];
   for (let i = 0; i < employees.length; i++) {
-    workloadsArr.push(employees[i].workload);
+    workloadArr.push(employees[i].workload);
   }
 
-  const medianWorkload = getMedian(workloadsArr);
+  const medianWorkload = getMedian(workloadArr);
+
+  /* ===== PRŮMĚRNÝ WORKLOAD ŽEN ===== */
 
   let womenSum = 0;
   let womenCount = 0;
@@ -101,6 +108,8 @@ export function getEmployeeStatistics(employees) {
   if (womenCount > 0) {
     averageWomenWorkload = Math.round(womenSum / womenCount);
   }
+
+  /* ===== SEŘAZENÍ DLE WORKLOAD ===== */
 
   const sortedByWorkload = employees.slice();
   sortedByWorkload.sort(function (a, b) {
