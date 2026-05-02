@@ -1,7 +1,3 @@
-/* =====================================================
-   MAIN
-   ===================================================== */
-
 export function main(dtoIn) {
   const employees = generateEmployeeData(dtoIn);
   return getEmployeeStatistics(employees);
@@ -14,22 +10,15 @@ export function main(dtoIn) {
 export function generateEmployeeData(dtoIn) {
   const count = dtoIn.count;
   const age = dtoIn.age;
-
   const employees = [];
 
   for (let i = 0; i < count; i++) {
-    const gender = getRandomGender();
-    const name = getRandomNameByGender(gender);
-    const surname = getRandomSurname();
-    const workload = getRandomWorkload();
-    const birthdate = generateBirthdate(age.min, age.max);
-
     employees.push({
-      gender: gender,
-      name: name,
-      surname: surname,
-      birthdate: birthdate,
-      workload: workload
+      gender: getRandomGender(),
+      name: getRandomNameByGender(getRandomGender()),
+      surname: getRandomSurname(),
+      birthdate: generateBirthdate(age.min, age.max),
+      workload: getRandomWorkload()
     });
   }
 
@@ -37,103 +26,91 @@ export function generateEmployeeData(dtoIn) {
 }
 
 /* =====================================================
-   STATISTIKY
+   STATISTIKY 
    ===================================================== */
 
 export function getEmployeeStatistics(employees) {
-  const total = employees.length;
+  const workloadsCount = countWorkloads(employees);
+  const ageData = computeAges(employees);
+  const womenWorkload = computeWomenWorkload(employees);
 
+  return {
+    total: employees.length,
+    workload10: workloadsCount.workload10,
+    workload20: workloadsCount.workload20,
+    workload30: workloadsCount.workload30,
+    workload40: workloadsCount.workload40,
+    averageAge: ageData.averageAge,
+    minAge: ageData.minAge,
+    maxAge: ageData.maxAge,
+    medianAge: ageData.medianAge,
+    medianWorkload: getMedian(employees.map(e => e.workload)),
+    averageWomenWorkload: womenWorkload,
+    sortedByWorkload: sortByWorkload(employees)
+  };
+}
+
+/* =====================================================
+   HELPER FUNKCE – STATISTIKY
+   ===================================================== */
+
+function countWorkloads(employees) {
   let workload10 = 0;
   let workload20 = 0;
   let workload30 = 0;
   let workload40 = 0;
 
-  for (let i = 0; i < employees.length; i++) {
-    const w = employees[i].workload;
-    if (w === 10) workload10++;
-    else if (w === 20) workload20++;
-    else if (w === 30) workload30++;
-    else if (w === 40) workload40++;
+  for (const emp of employees) {
+    if (emp.workload === 10) workload10++;
+    else if (emp.workload === 20) workload20++;
+    else if (emp.workload === 30) workload30++;
+    else if (emp.workload === 40) workload40++;
   }
 
-  /* ===== PŘESNÉ VĚKY (FLOAT) ===== */
+  return { workload10, workload20, workload30, workload40 };
+}
 
+function computeAges(employees) {
   const yearMs = 365.25 * 24 * 60 * 60 * 1000;
-  const agesExact = [];
+  const exactAges = [];
+  const wholeAges = [];
 
-  for (let i = 0; i < employees.length; i++) {
-    const birthMs = new Date(employees[i].birthdate).getTime();
-    const exactAge = (Date.now() - birthMs) / yearMs;
-    agesExact.push(exactAge);
+  for (const emp of employees) {
+    const birthMs = new Date(emp.birthdate).getTime();
+    exactAges.push((Date.now() - birthMs) / yearMs);
+    wholeAges.push(getAge(emp.birthdate));
   }
 
-  let sumExact = 0;
-  for (let i = 0; i < agesExact.length; i++) {
-    sumExact += agesExact[i];
-  }
+  return {
+    averageAge: computeAverageAge(exactAges),
+    minAge: Math.min(...wholeAges),
+    maxAge: Math.max(...wholeAges),
+    medianAge: Math.trunc(getMedian(exactAges))
+  };
+}
 
-  const averageAge = Number((sumExact / total).toFixed(1));
+function computeAverageAge(ages) {
+  let sum = 0;
+  for (const age of ages) sum += age;
+  return Number((sum / ages.length).toFixed(1));
+}
 
-  /* ===== CELÉ VĚKY PRO MIN / MAX ===== */
+function computeWomenWorkload(employees) {
+  let sum = 0;
+  let count = 0;
 
-  const agesWhole = [];
-  for (let i = 0; i < employees.length; i++) {
-    agesWhole.push(getAge(employees[i].birthdate));
-  }
-
-  const minAge = Math.min.apply(null, agesWhole);
-  const maxAge = Math.max.apply(null, agesWhole);
-
-  // 
-  const medianAge = Math.trunc(getMedian(agesExact));
-
-  /* ===== MEDIÁN WORKLOAD ===== */
-
-  const workloadsArr = [];
-  for (let i = 0; i < employees.length; i++) {
-    workloadsArr.push(employees[i].workload);
-  }
-
-  const medianWorkload = getMedian(workloadsArr);
-
-  /* ===== PRŮMĚR WOMEN WORKLOAD ===== */
-
-  let womenSum = 0;
-  let womenCount = 0;
-
-  for (let i = 0; i < employees.length; i++) {
-    if (employees[i].gender === "female") {
-      womenSum += employees[i].workload;
-      womenCount++;
+  for (const emp of employees) {
+    if (emp.gender === "female") {
+      sum += emp.workload;
+      count++;
     }
   }
 
-  let averageWomenWorkload = 0;
-  if (womenCount > 0) {
-    averageWomenWorkload = Math.round(womenSum / womenCount);
-  }
+  return count === 0 ? 0 : Math.round(sum / count);
+}
 
-  /* ===== SORT ===== */
-
-  const sortedByWorkload = employees.slice();
-  sortedByWorkload.sort(function (a, b) {
-    return a.workload - b.workload;
-  });
-
-  return {
-    total: total,
-    workload10: workload10,
-    workload20: workload20,
-    workload30: workload30,
-    workload40: workload40,
-    averageAge: averageAge,
-    minAge: minAge,
-    maxAge: maxAge,
-    medianAge: medianAge,
-    medianWorkload: medianWorkload,
-    averageWomenWorkload: averageWomenWorkload,
-    sortedByWorkload: sortedByWorkload
-  };
+function sortByWorkload(employees) {
+  return employees.slice().sort((a, b) => a.workload - b.workload);
 }
 
 /* =====================================================
@@ -150,44 +127,27 @@ function getAge(birthdate) {
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
     age--;
   }
-
   return age;
 }
 
 function getMedian(values) {
-  const sorted = values.slice();
-  sorted.sort(function (a, b) {
-    return a - b;
-  });
-
+  const sorted = values.slice().sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-
-  if (sorted.length % 2 === 0) {
-    return (sorted[mid - 1] + sorted[mid]) / 2;
-  } else {
-    return sorted[mid];
-  }
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
 }
 
 /* =====================================================
    DATA
    ===================================================== */
 
-const maleNames = [
-  "Jan", "Petr", "Martin", "Tomáš", "Lukáš",
-  "David", "Jakub", "Michal", "Ondřej", "Daniel"
-];
-
-const femaleNames = [
-  "Anna", "Jana", "Petra", "Lucie", "Kateřina",
-  "Tereza", "Eliška", "Barbora", "Klára", "Hana"
-];
-
+const maleNames = ["Jan", "Petr", "Martin", "Tomáš", "Lukáš"];
+const femaleNames = ["Anna", "Jana", "Petra", "Lucie", "Kateřina"];
 const surnames = [
   "Novák", "Svoboda", "Novotný", "Dvořák", "Černý",
-  "Procházka", "Kučera", "Veselý", "Horák", "Němec"
+  "Procházka", "Kučera", "Veselý", "Horák"
 ];
-
 const workloads = [10, 20, 30, 40];
 
 /* =====================================================
@@ -215,15 +175,11 @@ function getRandomWorkload() {
 function generateBirthdate(minAge, maxAge) {
   const now = Date.now();
   const yearMs = 365.25 * 24 * 60 * 60 * 1000;
-
   const youngest = now - minAge * yearMs;
   const oldest = now - maxAge * yearMs;
-
-  const randomTime = oldest + Math.random() * (youngest - oldest);
-  return new Date(randomTime).toISOString();
+  return new Date(oldest + Math.random() * (youngest - oldest)).toISOString();
 }
 
 function randomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
-``
