@@ -1,7 +1,6 @@
 export function main(dtoIn) {
   const employees = generateEmployeeData(dtoIn);
-  const dtoOut = getEmployeeStatistics(employees);
-  return dtoOut;
+  return getEmployeeStatistics(employees);
 }
 
 /* =====================================================
@@ -21,15 +20,13 @@ export function generateEmployeeData(dtoIn) {
     const workload = getRandomWorkload();
     const birthdate = generateBirthdate(age.min, age.max);
 
-    const employee = {
+    employees.push({
       gender: gender,
       name: name,
       surname: surname,
       birthdate: birthdate,
       workload: workload
-    };
-
-    employees.push(employee);
+    });
   }
 
   return employees;
@@ -40,10 +37,6 @@ export function generateEmployeeData(dtoIn) {
    ===================================================== */
 
 export function getEmployeeStatistics(employees) {
-  return calculateStatistics(employees);
-}
-
-function calculateStatistics(employees) {
   const total = employees.length;
 
   let workload10 = 0;
@@ -52,57 +45,61 @@ function calculateStatistics(employees) {
   let workload40 = 0;
 
   for (let i = 0; i < employees.length; i++) {
-    const workload = employees[i].workload;
+    const w = employees[i].workload;
 
-    if (workload === 10) {
-      workload10++;
-    } else if (workload === 20) {
-      workload20++;
-    } else if (workload === 30) {
-      workload30++;
-    } else if (workload === 40) {
-      workload40++;
-    }
+    if (w === 10) workload10++;
+    else if (w === 20) workload20++;
+    else if (w === 30) workload30++;
+    else if (w === 40) workload40++;
   }
 
-  const ages = [];
+  // 
+  const agesExact = [];
+  const yearMs = 365.25 * 24 * 60 * 60 * 1000;
 
   for (let i = 0; i < employees.length; i++) {
-    const age = getAge(employees[i].birthdate);
-    ages.push(age);
+    const birthMs = new Date(employees[i].birthdate).getTime();
+    const ageExact = (Date.now() - birthMs) / yearMs;
+    agesExact.push(ageExact);
   }
 
-  let ageSum = 0;
-  for (let i = 0; i < ages.length; i++) {
-    ageSum += ages[i];
+  let sumAges = 0;
+  for (let i = 0; i < agesExact.length; i++) {
+    sumAges += agesExact[i];
   }
 
-  const averageAge = Number((ageSum / total).toFixed(1));
+  const averageAge = Number((sumAges / total).toFixed(1));
 
-  const minAge = Math.min.apply(null, ages);
-  const maxAge = Math.max.apply(null, ages);
-  const medianAge = getMedian(ages);
-
-  const workloadArray = [];
+  // celé roky – zvlášť (jak chce zadání)
+  const agesWhole = [];
   for (let i = 0; i < employees.length; i++) {
-    workloadArray.push(employees[i].workload);
+    agesWhole.push(getAge(employees[i].birthdate));
   }
 
-  const medianWorkload = getMedian(workloadArray);
+  const minAge = Math.min.apply(null, agesWhole);
+  const maxAge = Math.max.apply(null, agesWhole);
+  const medianAge = getMedian(agesWhole);
 
-  let womenWorkloadSum = 0;
+  const workloadsArr = [];
+  for (let i = 0; i < employees.length; i++) {
+    workloadsArr.push(employees[i].workload);
+  }
+
+  const medianWorkload = getMedian(workloadsArr);
+
+  let womenSum = 0;
   let womenCount = 0;
 
   for (let i = 0; i < employees.length; i++) {
     if (employees[i].gender === "female") {
-      womenWorkloadSum += employees[i].workload;
+      womenSum += employees[i].workload;
       womenCount++;
     }
   }
 
   let averageWomenWorkload = 0;
   if (womenCount > 0) {
-    averageWomenWorkload = Math.round(womenWorkloadSum / womenCount);
+    averageWomenWorkload = Math.round(womenSum / womenCount);
   }
 
   const sortedByWorkload = employees.slice();
@@ -135,14 +132,9 @@ function getAge(birthdate) {
   const today = new Date();
 
   let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
+  const m = today.getMonth() - birth.getMonth();
 
-  if (monthDiff < 0) {
-    age--;
-  } else if (
-    monthDiff === 0 &&
-    today.getDate() < birth.getDate()
-  ) {
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
     age--;
   }
 
@@ -155,17 +147,17 @@ function getMedian(values) {
     return a - b;
   });
 
-  const middle = Math.floor(sorted.length / 2);
+  const mid = Math.floor(sorted.length / 2);
 
   if (sorted.length % 2 === 0) {
-    return (sorted[middle - 1] + sorted[middle]) / 2;
+    return (sorted[mid - 1] + sorted[mid]) / 2;
   } else {
-    return sorted[middle];
+    return sorted[mid];
   }
 }
 
 /* =====================================================
-   ZDROJE DAT
+   DATA
    ===================================================== */
 
 const maleNames = [
@@ -179,7 +171,8 @@ const femaleNames = [
 ];
 
 const surnames = [
-  "Novák", "Svoboda", "Novotný", "Dvořák", "Černý"
+  "Novák", "Svoboda", "Novotný", "Dvořák", "Černý",
+  "Procházka", "Kučera", "Veselý", "Horák", "Němec"
 ];
 
 const workloads = [10, 20, 30, 40];
@@ -189,25 +182,13 @@ const workloads = [10, 20, 30, 40];
    ===================================================== */
 
 function getRandomGender() {
-  const random = Math.random();
-
-  if (random < 0.5) {
-    return "male";
-  } else {
-    return "female";
-  }
+  return Math.random() < 0.5 ? "male" : "female";
 }
 
 function getRandomNameByGender(gender) {
-  let list;
-
-  if (gender === "male") {
-    list = maleNames;
-  } else {
-    list = femaleNames;
-  }
-
-  return randomItem(list);
+  return gender === "male"
+    ? randomItem(maleNames)
+    : randomItem(femaleNames);
 }
 
 function getRandomSurname() {
@@ -218,26 +199,18 @@ function getRandomWorkload() {
   return randomItem(workloads);
 }
 
-
+// 
 function generateBirthdate(minAge, maxAge) {
   const now = Date.now();
-  const yearInMs = 365.25 * 24 * 60 * 60 * 1000;
+  const yearMs = 365.25 * 24 * 60 * 60 * 1000;
 
-  const youngest = now - minAge * yearInMs;
-  const oldest = now - maxAge * yearInMs;
+  const youngest = now - minAge * yearMs;
+  const oldest = now - maxAge * yearMs;
 
-  const randomTime =
-    oldest + Math.random() * (youngest - oldest);
-
-  const birthdate = new Date(randomTime);
-  return birthdate.toISOString();
+  const randomTime = oldest + Math.random() * (youngest - oldest);
+  return new Date(randomTime).toISOString();
 }
 
-/* =====================================================
-   UTIL FUNKCE
-   ===================================================== */
-
 function randomItem(array) {
-  const index = Math.floor(Math.random() * array.length);
-  return array[index];
+  return array[Math.floor(Math.random() * array.length)];
 }
