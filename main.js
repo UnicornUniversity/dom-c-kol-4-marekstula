@@ -1,22 +1,25 @@
 export function main(dtoIn) {
+  const employees = generateEmployeeData(dtoIn);
+  const dtoOut = getEmployeeStatistics(employees);
+  return dtoOut;
+}
+
+/* =====================================================
+   GENEROVÁNÍ ZAMĚSTNANCŮ
+   ===================================================== */
+
+export function generateEmployeeData(dtoIn) {
   const count = dtoIn.count;
   const age = dtoIn.age;
 
   const employees = [];
 
   for (let i = 0; i < count; i++) {
-    // Krok 2.1 – výběr pohlaví zaměstnance
     const gender = getRandomGender();
-
-    // Krok 2.1 – výběr křestního jména dle pohlaví
     const name = getRandomNameByGender(gender);
-
-    // Krok 2.2 – výpočet data narození v zadaném intervalu věku
-    const birthdate = generateBirthdate(age.min, age.max);
-
-    // Další atributy zaměstnance
     const surname = getRandomSurname();
     const workload = getRandomWorkload();
+    const birthdate = generateBirthdate(age.min, age.max);
 
     const employee = {
       gender: gender,
@@ -29,109 +32,16 @@ export function main(dtoIn) {
     employees.push(employee);
   }
 
-  // Rozšíření – výpočet statistik ze seznamu zaměstnanců
-  const dtoOut = calculateStatistics(employees);
-
-  return dtoOut;
+  return employees;
 }
 
-/* =====================================
-   IS DOC – ZDROJE DAT
-   ===================================== */
+/* =====================================================
+   STATISTIKY
+   ===================================================== */
 
-const maleNames = [
-  "Jan", "Petr", "Martin", "Tomáš", "Lukáš",
-  "David", "Jakub", "Michal", "Ondřej", "Daniel",
-  "Radek", "Marek", "Roman", "Jiří", "Adam",
-  "Filip", "Matěj", "Vojtěch", "Karel", "Josef"
-];
-
-const femaleNames = [
-  "Anna", "Jana", "Petra", "Lucie", "Kateřina",
-  "Markéta", "Tereza", "Veronika", "Eliška", "Barbora",
-  "Klára", "Nikola", "Adéla", "Kristýna", "Monika",
-  "Ivana", "Michaela", "Lenka", "Hana", "Alena"
-];
-
-const surnames = [
-  "Novák", "Svoboda", "Novotný", "Dvořák", "Černý",
-  "Procházka", "Kučera", "Veselý", "Horák", "Němec",
-  "Pokorný", "Hájek", "Král", "Blažek", "Fiala",
-  "Růžička", "Krejčí", "Beneš", "Pospíšil", "Jelínek"
-];
-
-const workloads = [10, 20, 30, 40];
-
-/* =====================================
-   IS DOC – HELPER FUNKCE
-   ===================================== */
-
-function getRandomGender() {
-  const randomNumber = Math.random();
-
-  if (randomNumber < 0.5) {
-    return "male";
-  } else {
-    return "female";
-  }
+export function getEmployeeStatistics(employees) {
+  return calculateStatistics(employees);
 }
-
-function getRandomNameByGender(gender) {
-  let nameList;
-
-  if (gender === "male") {
-    nameList = maleNames;
-  } else {
-    nameList = femaleNames;
-  }
-
-  const name = randomItem(nameList);
-  return name;
-}
-
-function getRandomSurname() {
-  const surname = randomItem(surnames);
-  return surname;
-}
-
-function getRandomWorkload() {
-  const workload = randomItem(workloads);
-  return workload;
-}
-
-function generateBirthdate(minAge, maxAge) {
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-
-  const minYear = currentYear - maxAge;
-  const maxYear = currentYear - minAge;
-
-  const year = randomInt(minYear, maxYear);
-  const month = randomInt(0, 11);
-  const day = randomInt(1, 28);
-
-  const birthdate = new Date(year, month, day);
-  return birthdate.toISOString();
-}
-
-/* =====================================
-   POMOCNÉ FUNKCE
-   ===================================== */
-
-function randomItem(array) {
-  const index = Math.floor(Math.random() * array.length);
-  return array[index];
-}
-
-function randomInt(min, max) {
-  const difference = max - min + 1;
-  const random = Math.floor(Math.random() * difference);
-  return min + random;
-}
-
-/* =====================================
-   ROZŠÍŘENÍ – STATISTIKY (dtoOut)
-   ===================================== */
 
 function calculateStatistics(employees) {
   const total = employees.length;
@@ -164,7 +74,7 @@ function calculateStatistics(employees) {
 
   let ageSum = 0;
   for (let i = 0; i < ages.length; i++) {
-    ageSum = ageSum + ages[i];
+    ageSum += ages[i];
   }
 
   const averageAge = Number((ageSum / total).toFixed(1));
@@ -173,12 +83,12 @@ function calculateStatistics(employees) {
   const maxAge = Math.max.apply(null, ages);
   const medianAge = getMedian(ages);
 
-  const workloadsArray = [];
+  const workloadArray = [];
   for (let i = 0; i < employees.length; i++) {
-    workloadsArray.push(employees[i].workload);
+    workloadArray.push(employees[i].workload);
   }
 
-  const medianWorkload = getMedian(workloadsArray);
+  const medianWorkload = getMedian(workloadArray);
 
   let womenWorkloadSum = 0;
   let womenCount = 0;
@@ -216,18 +126,21 @@ function calculateStatistics(employees) {
   };
 }
 
+/* =====================================================
+   VÝPOČTY
+   ===================================================== */
+
 function getAge(birthdate) {
   const birth = new Date(birthdate);
   const today = new Date();
 
   let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
 
-  const monthDifference = today.getMonth() - birth.getMonth();
-
-  if (monthDifference < 0) {
+  if (monthDiff < 0) {
     age--;
   } else if (
-    monthDifference === 0 &&
+    monthDiff === 0 &&
     today.getDate() < birth.getDate()
   ) {
     age--;
@@ -242,11 +155,89 @@ function getMedian(values) {
     return a - b;
   });
 
-  const middleIndex = Math.floor(sorted.length / 2);
+  const middle = Math.floor(sorted.length / 2);
 
   if (sorted.length % 2 === 0) {
-    return (sorted[middleIndex - 1] + sorted[middleIndex]) / 2;
+    return (sorted[middle - 1] + sorted[middle]) / 2;
   } else {
-    return sorted[middleIndex];
+    return sorted[middle];
   }
+}
+
+/* =====================================================
+   ZDROJE DAT
+   ===================================================== */
+
+const maleNames = [
+  "Jan", "Petr", "Martin", "Tomáš", "Lukáš",
+  "David", "Jakub", "Michal", "Ondřej", "Daniel"
+];
+
+const femaleNames = [
+  "Anna", "Jana", "Petra", "Lucie", "Kateřina",
+  "Tereza", "Eliška", "Barbora", "Klára", "Hana"
+];
+
+const surnames = [
+  "Novák", "Svoboda", "Novotný", "Dvořák", "Černý"
+];
+
+const workloads = [10, 20, 30, 40];
+
+/* =====================================================
+   GENERÁTORY
+   ===================================================== */
+
+function getRandomGender() {
+  const random = Math.random();
+
+  if (random < 0.5) {
+    return "male";
+  } else {
+    return "female";
+  }
+}
+
+function getRandomNameByGender(gender) {
+  let list;
+
+  if (gender === "male") {
+    list = maleNames;
+  } else {
+    list = femaleNames;
+  }
+
+  return randomItem(list);
+}
+
+function getRandomSurname() {
+  return randomItem(surnames);
+}
+
+function getRandomWorkload() {
+  return randomItem(workloads);
+}
+
+
+function generateBirthdate(minAge, maxAge) {
+  const now = Date.now();
+  const yearInMs = 365.25 * 24 * 60 * 60 * 1000;
+
+  const youngest = now - minAge * yearInMs;
+  const oldest = now - maxAge * yearInMs;
+
+  const randomTime =
+    oldest + Math.random() * (youngest - oldest);
+
+  const birthdate = new Date(randomTime);
+  return birthdate.toISOString();
+}
+
+/* =====================================================
+   UTIL FUNKCE
+   ===================================================== */
+
+function randomItem(array) {
+  const index = Math.floor(Math.random() * array.length);
+  return array[index];
 }
